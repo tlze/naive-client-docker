@@ -15,8 +15,10 @@ RUN set -eux; \
         "linux/arm/v7") architecture=openwrt-arm_cortex-a15_neon-vfpv4 ;; \
     esac; \
     \
-    download_url=$(curl -L https://api.github.com/repos/klzgrad/naiveproxy/releases/latest | jq -r --arg assert "^naiveproxy-.+$architecture" '.assets[] | select (.name | test($assert))| .browser_download_url' -); \
-    curl -L $download_url | tar x -Jvf -; \
+    TAG_URL="https://api.github.com/repos/klzgrad/naiveproxy/releases/latest"; \
+    VER=$(curl -L "${TAG_URL}" | jq -r '.tag_name'); \
+    download_url="https://github.com/klzgrad/naiveproxy/releases/download/${VER}/naiveproxy-${VER}-${architecture}.tar.xz"; \
+    curl -L ${download_url} | tar x -Jvf -; \
     mv naiveproxy-* naiveproxy;
 
 FROM --platform=$TARGETPLATFORM alpine:latest AS runtime
@@ -38,6 +40,5 @@ RUN set -eux; \
     ; \
     \
     chmod +x /usr/local/bin/*;
-
 
 CMD ["naive", "/etc/naiveproxy/config.json" ]
