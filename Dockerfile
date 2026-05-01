@@ -1,6 +1,7 @@
 FROM --platform=$TARGETPLATFORM golang:alpine AS builder
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
+ARG GITHUB_TOKEN
 
 # RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
@@ -15,7 +16,12 @@ RUN set -eux; \
         "linux/arm/v7") architecture=openwrt-arm_cortex-a15_neon-vfpv4 ;; \
     esac; \
     \
-    download_url=$(curl -L https://api.github.com/repos/klzgrad/naiveproxy/releases/latest | jq -r --arg assert "^naiveproxy-.+$architecture" '.assets[] | select (.name | test($assert))| .browser_download_url' -); \
+    if [ -n "$GITHUB_TOKEN" ]; then \
+        auth_header="-H Authorization: Bearer $GITHUB_TOKEN"; \
+    else \
+        auth_header=""; \
+    fi; \
+    download_url=$(curl -L $auth_header https://api.github.com/repos/klzgrad/naiveproxy/releases/latest | jq -r --arg assert "^naiveproxy-.+$architecture" '.assets[] | select (.name | test($assert))| .browser_download_url' -); \
     curl -L $download_url | tar x -Jvf -; \
     mv naiveproxy-* naiveproxy;
 

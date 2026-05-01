@@ -9,6 +9,10 @@ on:
     - cron: "0 0 */3 * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   multi:
     runs-on: ubuntu-latest
@@ -57,6 +61,8 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/naiveproxy-client:latest
             ghcr.io/${{ github.actor }}/naiveproxy-client:latest
           cache-from: type=local,src=/tmp/.buildx-cache
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           # first run does not export the cache
 
       # Do it all again with both archs. the amd64 will be a huge cache hit
@@ -74,3 +80,5 @@ jobs:
             ghcr.io/${{ github.actor }}/naiveproxy-client:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
