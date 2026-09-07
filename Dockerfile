@@ -17,12 +17,13 @@ RUN set -eux; \
     esac; \
     \
     if [ -n "$GITHUB_TOKEN" ]; then \
-        auth_header="-H Authorization: Bearer $GITHUB_TOKEN"; \
+        api_json=$(curl -sSL -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/klzgrad/naiveproxy/releases/latest); \
     else \
-        auth_header=""; \
+        api_json=$(curl -sSL https://api.github.com/repos/klzgrad/naiveproxy/releases/latest); \
     fi; \
-    download_url=$(curl -L $auth_header https://api.github.com/repos/klzgrad/naiveproxy/releases/latest | jq -r --arg assert "^naiveproxy-.+$architecture" '.assets[] | select (.name | test($assert))| .browser_download_url' -); \
-    curl -L $download_url | tar x -Jvf -; \
+    download_url=$(printf '%s' "$api_json" | jq -r --arg assert "^naiveproxy-.+$architecture\\.tar\\.xz$" '.assets[] | select (.name | test($assert)) | .browser_download_url' | grep -v -- '-static\.tar\.xz$' | head -n 1); \
+    if [ -z "$download_url" ] || [ "$download_url" = "null" ]; then echo "failed to resolve download url for $architecture"; printf '%s' "$api_json" | head -c 1000; echo; exit 1; fi; \
+    curl -fsSL "$download_url" | tar x -Jvf -; \
     mv naiveproxy-* naiveproxy;
 
 FROM --platform=$TARGETPLATFORM alpine:latest AS runtime
